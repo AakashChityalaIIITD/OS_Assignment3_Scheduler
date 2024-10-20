@@ -116,7 +116,7 @@ Process view(priorityQueue* queue){
 }
 
 void roundRobinAlgo(Process process, int NCPU, int no_of_processes, double tSlice){
-    //
+    // some issue was coming, will try to fix and commit later
 }
 
 
