@@ -1,0 +1,147 @@
+#include <stdio.h>
+#include <string.h>
+#include <stdlib.h>
+#include <unistd.h>
+#include <sys/time.h>
+#include <time.h>
+
+#define MAXPWD 1000
+#define MAXHISTORY 1000
+
+typedef struct {
+    char* name;
+    pid_t pid;
+    time_t start_time;
+    double* completion_time;
+    double* wait_time;
+} JobHistory;
+
+JobHistory history[MAXHISTORY];
+int history_count = 0;
+
+void job_history(){
+    printf("%-5s %-40s %-10s %-20s %s","No.", "Job Name", "PID", "Completion Time", "Wait Time");
+
+    for(int i =0; i< history_count; i++){
+        printf("%-5d %-40s %-10d %-20s %s\n", i+1, history[i].name, history[i].pid, history[i].completion_time, history[i].wait_time);
+    }
+}
+
+void add_history(char *name, pid_t pid, double *completion_time, double *wait_time){
+    if(history_count<MAXHISTORY){
+        history[history_count].name = name;
+        history[history_count].pid = pid;
+        history[history_count].completion_time = completion_time;
+        history[history_count].wait_time = wait_time;
+        history_count++;
+    }else{
+        printf("History is full");
+    }
+}
+
+typedef struct {
+    char name[10];
+    int pid;         // Process ID
+    int burst;      // Burst time
+    int remaining;  // Remaining burst time
+    int waiting;    // Waiting time for each process
+    int completion; // Completion time for each process
+    int priority;
+} Process;
+
+
+typedef struct {
+    Process items[MAXPWD];
+    int size;
+} priorityQueue;
+
+
+void swap(Process* a, Process* b){
+    Process temp = *a;
+    *a = *b;
+    *b = temp;
+}
+
+void heapifyUp(priorityQueue* queue, int index){
+    if (queue->items[(index - 1) / 2].priority > queue->items[index].priority) {
+        swap(&queue->items[(index - 1) / 2], &queue->items[index]);
+        heapifyUp(queue, (index - 1) / 2);
+    }
+}
+
+
+void enqueue(priorityQueue* queue, Process process){
+    queue->items[queue->size] = process;
+    queue->size++;
+    heapifyUp(queue, queue->size - 1);
+}
+
+
+int heapifyDown(priorityQueue* queue, int index){
+    int smallest = index;
+    int left = 2 * index + 1;
+    int right = 2 * index + 2;
+
+    if (left < queue->size && queue->items[left].priority < queue->items[smallest].priority)
+        smallest = left;
+
+    if (right < queue->size && queue->items[right].priority < queue->items[smallest].priority)
+        smallest = right;
+
+    if (smallest != index) {
+        swap(&queue->items[index], &queue->items[smallest]);
+        heapifyDown(queue, smallest);
+    }
+}
+
+
+Process dequeue(priorityQueue* queue){
+    if (queue->size==0) {
+        perror("Queue is empty\n");
+    }
+
+    Process item = queue->items[0];
+    queue->size--;
+    queue->items[0] = queue->items[queue->size];
+    heapifyDown(queue, 0);
+    return item;
+}
+
+
+Process view(priorityQueue* queue){
+    if (!queue->size) {
+        perror("Priority queue is empty\n");
+    }
+    return queue->items[0];
+}
+
+void roundRobinAlgo(Process process, int NCPU, int no_of_processes, double tSlice){
+    //
+}
+
+
+// void add_process(){
+
+
+// }
+
+int main(){
+    priorityQueue ready_queue = {};
+    Process p1 = { "P1", 1, 10, 5, 0, 0, 3 };  // Priority 3
+    Process p2 = { "P2", 2, 15, 10, 0, 0, 1 };   // Priority 1 
+    Process p3 = { "P3", 3, 20, 15, 0, 0, 2 };   // Priority 2
+
+    enqueue(&ready_queue,p1);
+    enqueue(&ready_queue,p2);
+    enqueue(&ready_queue,p3);
+
+    Process top = view(&ready_queue);
+    printf("Process name: %s | priority number: %d \n",top.name, top.priority);
+    dequeue(&ready_queue);
+
+    Process top2 = view(&ready_queue);
+    printf("Process name: %s | priority number: %d\n",top2.name, top2.priority);
+
+
+    return 0;
+}
