@@ -77,17 +77,19 @@ void roundRobinAlgo(Queue* ready_queue, Process processes[], int NCPU, int no_of
 
     while (completed_processes < no_of_processes) {
         
-        // This part assigns process on different cpus
+        // Assign processes to each available CPU
         for (int i = 0; i < NCPU; i++) {
             if (!isEmpty(ready_queue) && processor_state[i] == -1) {
                 process_on_cpu[i] = dequeue(ready_queue);
-                processor_state[i] = 1;
+                processor_state[i] = 1; // CPU i is active
             }
         }
 
+        // Process each CPU's task simultaneously
         for (int i = 0; i < NCPU; i++) {
             if (processor_state[i] == 1) {
                 double time_on_cpu;
+                
                 if (process_on_cpu[i].remaining_time < tSlice) {
                     time_on_cpu = process_on_cpu[i].remaining_time;
                 } else {
@@ -95,26 +97,29 @@ void roundRobinAlgo(Queue* ready_queue, Process processes[], int NCPU, int no_of
                 }
 
                 process_on_cpu[i].remaining_time -= time_on_cpu;
-                current_time += time_on_cpu;
 
-                printf("Time %lf - %lf: Running PID:%d on CPU %d\n", current_time - time_on_cpu, current_time, process_on_cpu[i].pid, i + 1);
+                printf("Time %lf - %lf: Running PID:%d on CPU %d\n", current_time, current_time + time_on_cpu, process_on_cpu[i].pid, i + 1);
 
+                // Check if process is complete
                 if (process_on_cpu[i].remaining_time == 0) {
-                    // Update completion time in the original array
                     for (int j = 0; j < no_of_processes; j++) {
                         if (processes[j].pid == process_on_cpu[i].pid) {
-                            processes[j].completion_time = current_time;
+                            processes[j].completion_time = current_time + time_on_cpu;
                             break;
                         }
                     }
                     completed_processes++;
-                    processor_state[i] = -1;
+                    processor_state[i] = -1; // Free the CPU
                 } else {
+                    // Requeue the process if it is not finished
                     enqueue(ready_queue, process_on_cpu[i]);
-                    processor_state[i] = -1;
+                    processor_state[i] = -1; // Free the CPU for next cycle
                 }
             }
         }
+        
+        // increase current time only when all CPU(s) have completed their timeslice
+        current_time += tSlice;
     }
 
     // Calculate waiting time for each process
@@ -154,10 +159,8 @@ int main() {
     enqueue(&ready_queue, processes[1]);
     enqueue(&ready_queue, processes[2]);
 
-    Process top = view(&ready_queue);
-
     int no_of_processes = 3;
-    int NCPU = 2;
+    int NCPU = 3;
     double tSlice = 5;
 
     roundRobinAlgo(&ready_queue, processes, NCPU, no_of_processes, tSlice);
